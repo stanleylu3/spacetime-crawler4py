@@ -22,12 +22,13 @@ def extract_next_links(url, resp):
             print(f"error: {resp.error}")
         else:
             content = resp.raw_response.content
-            soup = BeautifulSoup(content, 'html.parser')
-            links = soup.find_all('a')
-            for link in links:
-                href = link.get('href')
-                if href:
-                    urls += href
+            if content:
+                soup = BeautifulSoup(content, 'html.parser')
+                links = soup.find_all('a')
+                for link in links:
+                    href = link.get('href')
+                    if href and is_valid(href):
+                        urls.append(href)
     return urls
 
 def is_valid(url):
