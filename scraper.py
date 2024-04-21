@@ -1,5 +1,5 @@
 import re
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse, urlunparse, urljoin
 from bs4 import BeautifulSoup
 
 def scraper(url, resp):
@@ -31,7 +31,9 @@ def extract_next_links(url, resp):
                         # remove fragment from URL
                         parsed_url = urlparse(href)
                         cleaned_url = urlunparse(parsed_url._replace(fragment=''))
-                        urls.append(cleaned_url)
+                        # makes sure the URL is absolute
+                        absolute_url = urljoin(resp.url, cleaned_url)
+                        urls.append(absolute_url)
     return urls
 
 def is_valid(url):
