@@ -1,5 +1,6 @@
 import re
 from urllib.parse import urlparse, urlunparse, urljoin
+from urllib.robotparser import RobotFileParser
 from bs4 import BeautifulSoup
 
 def scraper(url, resp):
@@ -68,3 +69,23 @@ def is_valid(url):
     except TypeError:
         print ("TypeError for ", parsed)
         raise
+
+def get_politeness_delay(url):
+    #gets politeness delay from website's robots.txt file, if it DNE uses a default value
+    #default value
+    DEFAULT_CRAWL_DELAY = 2
+    #get the robots file for the url
+    try:
+        robots_txt_url = urljoin(url, "/robots.txt")
+        robot_parser = RobotFileParser()
+        robot_parser.set_url(robots_txt_url)
+        #parse the robots file
+        robot_parser.read()
+        #retrieve the crawl delay for user agent '*'
+        crawl_delay = robot_parser.crawl_delay('*')
+        if crawl_delay:
+            return crawl_delay
+        return DEFAULT_CRAWL_DELAY
+    except Exception as e:
+        print('Error retrieving crawl delay')
+        return DEFAULT_CRAWL_DELAY
