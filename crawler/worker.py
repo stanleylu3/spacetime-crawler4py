@@ -90,8 +90,8 @@ class Worker(Thread):
                 self.permissions[domain] = permission
                 return permission
             except URLError as e:
-                self.logger.warning("Connection failed, attempting to download")
-                return True
+                self.logger.warning(f"Connection failed {e}")
+                return False
             except Exception as e:
                 self.logger.info(f"Error retrieving permission: {e}")
                 return False
