@@ -76,7 +76,7 @@ def is_valid(url):
         ]
         parsed = urlparse(url)
         #if the website is not within the allowed domains, return false
-        if parsed.netloc.endswith(tuple(allowed_domains)):
+        if parsed.netloc.endswith(tuple(allowed_domains)) and parsed.netloc != "physics.uci.edu":
             if parsed.scheme not in set(["http", "https"]):
                 return False
             return not re.match(
