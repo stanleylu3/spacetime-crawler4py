@@ -1,6 +1,8 @@
+import socket
 from threading import Thread
 
 from inspect import getsource
+from urllib.error import URLError
 from urllib.parse import urlparse, urljoin
 from urllib.robotparser import RobotFileParser
 
@@ -13,14 +15,21 @@ import time
 class Worker(Thread):
     permissions = {}
     crawl_delays = {}
+    retry_attempts = 6
+    retry_delay = 10
+
     def __init__(self, worker_id, config, frontier):
         self.logger = get_logger(f"Worker-{worker_id}", "Worker")
         self.config = config
         self.frontier = frontier
         # basic check for requests in scraper
-        assert {getsource(scraper).find(req) for req in {"from requests import", "import requests"}} == {-1}, "Do not use requests in scraper.py"
-        assert {getsource(scraper).find(req) for req in {"from urllib.request import", "import urllib.request"}} == {-1}, "Do not use urllib.request in scraper.py"
-        super().__init__(daemon=True)
+        assert {getsource(scraper).find(req) for req in
+                {"from requests import", "import requests"}} == {
+                   -1}, "Do not use requests in scraper.py"
+        assert {getsource(scraper).find(req) for req in
+                {"from urllib.request import", "import urllib.request"}} == {
+                   -1}, "Do not use urllib.request in scraper.py"
+        super().__init__(daemon = True)
 
     def run(self):
         while True:
@@ -34,15 +43,20 @@ class Worker(Thread):
             if permission:
                 if politeness_delay:
                     time.sleep(politeness_delay)
-                resp = download(tbd_url, self.config, self.logger)
-                self.logger.info(
-                    f"Downloaded {tbd_url}, status <{resp.status}>, "
-                    f"using cache {self.config.cache_server}.")
-                scraped_urls = scraper.scraper(tbd_url, resp)
-                for scraped_url in scraped_urls:
-                    self.frontier.add_url(scraped_url)
-                self.frontier.mark_url_complete(tbd_url)
-                time.sleep(self.config.time_delay)
+                resp = self.download_with_retry(tbd_url)
+                if resp:
+                    self.logger.info(
+                        f"Downloaded {tbd_url}, status <{resp.status}> , "
+                        f"using cache {self.config.cache_server}.")
+                    scraped_urls = scraper.scraper(tbd_url, resp)
+                    for scraped_url in scraped_urls:
+                        self.frontier.add_url(scraped_url)
+                    self.frontier.mark_url_complete(tbd_url)
+                    time.sleep(self.config.time_delay)
+                else:
+                    self.logger.error(f"Failed to connect {tbd_url}")
+            else:
+                self.logger.warning(f"Permission denied for {domain}")
 
     def get_domain(self, url):
         return urlparse(url).netloc
@@ -52,7 +66,7 @@ class Worker(Thread):
             return self.crawl_delays[domain]
         else:
             try:
-                robots_txt_url = urljoin(domain, "robots.txt")
+                robots_txt_url = f"https://{domain}/robots.txt"
                 robots_parser = RobotFileParser()
                 robots_parser.set_url(robots_txt_url)
                 robots_parser.read()
@@ -68,12 +82,27 @@ class Worker(Thread):
             return self.permissions[domain]
         else:
             try:
-                robots_txt_url = urljoin(domain, "robots.txt")
+                robots_txt_url = f"https://{domain}/robots.txt"
                 robots_parser = RobotFileParser()
                 robots_parser.set_url(robots_txt_url)
                 robots_parser.read()
                 permission = robots_parser.can_fetch('*', domain)
                 self.permissions[domain] = permission
                 return permission
+            except URLError as e:
+                self.logger.warning("Connection failed, attempting to download")
+                return True
             except Exception as e:
                 self.logger.info(f"Error retrieving permission: {e}")
+                return False
+
+    def download_with_retry(self, url):
+        attempts = 0
+        while attempts < self.retry_attempts:
+            try:
+                return download(url, self.config, self.logger)
+            except (URLError, socket.timeout) as e:
+                self.logger.warning(f"Download Attempts {attempts + 1} failed: {e}")
+                time.sleep(self.retry_delay)
+                attempts += 1
+        return None

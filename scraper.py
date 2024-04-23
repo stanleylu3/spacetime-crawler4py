@@ -1,7 +1,5 @@
 import re
-import time
 from urllib.parse import urlparse, urlunparse, urljoin
-from urllib.robotparser import RobotFileParser
 from bs4 import BeautifulSoup
 
 def scraper(url, resp):
@@ -35,13 +33,7 @@ def extract_next_links(url, resp):
                         cleaned_url = urlunparse(parsed_url._replace(fragment=''))
                         # makes sure the URL is absolute
                         absolute_url = urljoin(resp.url, cleaned_url)
-                        #check for permission to crawl
-                        if get_permission(absolute_url):
-                            #get politeness delay
-                            politeness_delay = get_politeness_delay(absolute_url)
-                            #respect the politeness delay before moving on to the next url
-                            time.sleep(politeness_delay)
-                            urls.append(absolute_url)
+                        urls.append(absolute_url)
     return urls
 
 def is_valid(url):
@@ -76,35 +68,3 @@ def is_valid(url):
     except TypeError:
         print ("TypeError for ", parsed)
         raise
-
-def get_politeness_delay(url):
-    #gets politeness delay from website's robots.txt file, if it DNE uses a default value
-    #default value
-    DEFAULT_CRAWL_DELAY = 0.5
-    #get the robots file for the url
-    try:
-        robots_txt_url = urljoin(url, "/robots.txt")
-        robot_parser = RobotFileParser()
-        robot_parser.set_url(robots_txt_url)
-        #parse the robots file
-        robot_parser.read()
-        #retrieve the crawl delay for user agent '*'
-        crawl_delay = robot_parser.crawl_delay('*')
-        if crawl_delay:
-            return crawl_delay
-        return DEFAULT_CRAWL_DELAY
-    except Exception as e:
-        print('Error retrieving crawl delay')
-        return DEFAULT_CRAWL_DELAY
-
-def get_permission(url):
-    #checks robots.txt for permission to crawl
-    try:
-        robots_txt_url = urljoin(url, "/robots.txt")
-        robot_parser = RobotFileParser()
-        robot_parser.set_url(robots_txt_url)
-        robot_parser.read()
-        return robot_parser.can_fetch("*", url)
-    except Exception as e:
-        print(f"Error checking permission: {e}")
-        return False
