@@ -2,6 +2,13 @@ import re
 from urllib.parse import urlparse, urlunparse, urljoin
 from bs4 import BeautifulSoup
 
+
+# stores visited URLs and gurantees no duplicates
+visited_urls = set()
+
+# data structures to help generate report
+page_lengths ={}
+
 def scraper(url, resp):
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
@@ -17,6 +24,7 @@ def extract_next_links(url, resp):
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
     urls = []
+    global visited_urls
     if is_valid(resp.url):
         if resp.status != 200:
             print(f"error: {resp.error}")
@@ -24,6 +32,24 @@ def extract_next_links(url, resp):
             content = resp.raw_response.content
             if content:
                 soup = BeautifulSoup(content, 'html.parser')
+
+                # calculates text ratio whether there's a good amount of relevant text info.
+                text_ratio = len(soup.get_text(strip=True)) / len(content)
+
+                if text_ratio > 0.1:
+                    # Check for redirection
+                    if resp.url != url:
+                        visited_urls.add(resp.url)
+                    # Checking for infinite traps
+                    if url in visited_urls:
+                        return urls
+                    visited_urls.add(url)
+                    # Check for dead URLS
+                    if len(content) == 0:
+                        return urls
+                    # Check for large files
+                    if len(content) > 1000000:
+                        return urls
                 links = soup.find_all('a')
                 for link in links:
                     href = link.get('href')
@@ -37,7 +63,7 @@ def extract_next_links(url, resp):
     return urls
 
 def is_valid(url):
-    # Decide whether to crawl this url or not. 
+    # Decide whether to crawl this url or not.
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
     try:
