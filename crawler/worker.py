@@ -35,11 +35,12 @@ class Worker(Thread):
         while True:
             tbd_url = self.frontier.get_tbd_url()
             if not tbd_url:
+                self.logger.info(f"Number of domains crawled: {len(self.permissions)}")
                 self.logger.info("Frontier is empty. Stopping Crawler.")
                 break
             domain = self.get_domain(tbd_url)
-            politeness_delay = self.get_politeness_delay(domain)
-            permission = self.get_permission(domain)
+            politeness_delay = self.get_politeness_delay(domain, tbd_url)
+            permission = self.get_permission(domain, tbd_url)
             if permission:
                 if politeness_delay:
                     time.sleep(politeness_delay)
@@ -61,12 +62,12 @@ class Worker(Thread):
     def get_domain(self, url):
         return urlparse(url).netloc
 
-    def get_politeness_delay(self, domain):
+    def get_politeness_delay(self, domain, url):
         if domain in self.crawl_delays:
             return self.crawl_delays[domain]
         else:
             try:
-                robots_txt_url = f"https://{domain}/robots.txt"
+                robots_txt_url = f"{urlparse(url).scheme}://{domain}/robots.txt"
                 robots_parser = RobotFileParser()
                 robots_parser.set_url(robots_txt_url)
                 robots_parser.read()
@@ -77,12 +78,12 @@ class Worker(Thread):
                 self.logger.info(f"Error retrieving politeness delay: {e}")
                 return 0
 
-    def get_permission(self, domain):
+    def get_permission(self, domain, url):
         if domain in self.permissions:
             return self.permissions[domain]
         else:
             try:
-                robots_txt_url = f"https://{domain}/robots.txt"
+                robots_txt_url = f"{urlparse(url).scheme}://{domain}/robots.txt"
                 robots_parser = RobotFileParser()
                 robots_parser.set_url(robots_txt_url)
                 robots_parser.read()
@@ -101,7 +102,7 @@ class Worker(Thread):
         while attempts < self.retry_attempts:
             try:
                 return download(url, self.config, self.logger)
-            except (URLError, socket.timeout) as e:
+            except (URLError, socket.timeout, ConnectionError, ConnectionRefusedError, TimeoutError) as e:
                 self.logger.warning(f"Download Attempts {attempts + 1} failed: {e}")
                 time.sleep(self.retry_delay)
                 attempts += 1
