@@ -116,7 +116,7 @@ def is_valid(url):
 
 
             # Trap checking for certain words in path and query
-            query_bl = {"ical"}
+            query_bl = {"ical", "rev"}
             if any([(query in parsed.query) for query in query_bl]):
                 return False
 
@@ -130,6 +130,10 @@ def is_valid(url):
 
             # Checks if length of link is too long
             if(len(url) > 200):
+                return False
+
+            # Trap checking for slideshows and datasheets
+            if (re.search("[sS]li?de?s?[_-]?\d", url) != None or re.search("sheets?-?\d", url)):
                 return False
 
             return not re.match(
