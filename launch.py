@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 from utils.server_registration import get_cache_server
 from utils.config import Config
 from crawler import Crawler
-
+from scraper import unique_pages, page_lengths, word_frequencies, subdomains
 
 def main(config_file, restart):
     cparser = ConfigParser()
@@ -15,26 +15,26 @@ def main(config_file, restart):
     crawler.start()
 
     # Generate report after crawling
-    generate_report(config)
+    generate_report(unique_pages, page_lengths, word_frequencies, subdomains)
 
-def generate_report(config):
+def generate_report(unique_pages, page_lengths, word_frequencies, subdomains):
     # Number of unique pages
-    print(f"Number of unique pages found: {len(config.unique_pages)}")
+    print(f"Number of unique pages found: {len(unique_pages)}")
 
     # Longest page
-    longest_page_url = max(config.page_lengths, key=config.page_lengths.get)
-    longest_page_length = config.page_lengths[longest_page_url]
+    longest_page_url = max(page_lengths, key=page_lengths.get)
+    longest_page_length = page_lengths[longest_page_url]
     print(f"Longest page URL: {longest_page_url}, Length: {longest_page_length}")
 
     # 50 most common words
-    common_words = config.word_frequencies.most_common(50)
+    common_words = word_frequencies.most_common(50)
     print("50 most common words:")
     for word, frequency in common_words:
         print(f"{word}: {frequency}")
 
     # Subdomains count
     print("Subdomains count:")
-    for subdomain, count in sorted(config.subdomains.items()):
+    for subdomain, count in sorted(subdomains.items()):
         print(f"{subdomain}: {count}")
 
 
