@@ -148,23 +148,3 @@ def is_valid(url):
         print("TypeError for ", parsed)
         raise
 
-
-# def generate_report():
-#     # Number of unique pages
-#     print(f"Number of unique pages found: {len(unique_pages)}")
-#
-#     # Longest page
-#     longest_page_url = max(page_lengths, key=page_lengths.get)
-#     longest_page_length = page_lengths[longest_page_url]
-#     print(f"Longest page URL: {longest_page_url}, Length: {longest_page_length}")
-#
-#     # 50 most common words
-#     common_words = word_frequencies.most_common(50)
-#     print("50 most common words:")
-#     for word, frequency in common_words:
-#         print(f"{word}: {frequency}")
-#
-#     # Subdomains count
-#     print("Subdomains count:")
-#     for subdomain, count in sorted(subdomains.items()):
-#         print(f"{subdomain}: {count}")
