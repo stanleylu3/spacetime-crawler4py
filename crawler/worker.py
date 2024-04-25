@@ -46,6 +46,9 @@ class Worker(Thread):
                     time.sleep(politeness_delay)
                 resp = self.download_with_retry(tbd_url)
                 if resp:
+                    if 600 <= resp.status < 700:
+                        self.logger.info(f"Ignoring url {tbd_url}, status: {resp.status}")
+                        continue
                     self.logger.info(
                         f"Downloaded {tbd_url}, status <{resp.status}> , "
                         f"using cache {self.config.cache_server}.")
@@ -71,7 +74,7 @@ class Worker(Thread):
                 robots_parser = RobotFileParser()
                 robots_parser.set_url(robots_txt_url)
                 robots_parser.read()
-                crawl_delay = robots_parser.crawl_delay('*')
+                crawl_delay = robots_parser.crawl_delay(self.config.user_agent)
                 self.crawl_delays[domain] = crawl_delay if crawl_delay else 0
                 return self.crawl_delays[domain]
             except Exception as e:
@@ -87,7 +90,8 @@ class Worker(Thread):
                 robots_parser = RobotFileParser()
                 robots_parser.set_url(robots_txt_url)
                 robots_parser.read()
-                permission = robots_parser.can_fetch('*', domain)
+                permission = robots_parser.can_fetch(self.config.user_agent, domain)
+                self.logger.info(f"{domain} permission: {permission}")
                 self.permissions[domain] = permission
                 return permission
             except URLError as e:

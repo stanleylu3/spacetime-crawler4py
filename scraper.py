@@ -2,6 +2,10 @@ import re
 from urllib.parse import urlparse, urlunparse, urljoin
 from bs4 import BeautifulSoup
 from collections import Counter
+from simhash import Simhash
+
+from utils import get_urlhash
+
 
 # stores visited URLs and guarantees no duplicates
 visited_urls = set()
@@ -11,6 +15,9 @@ page_lengths = {}
 word_frequencies = Counter()
 subdomains = Counter()
 unique_pages = set()
+
+#dict of simhashes of URLS
+simhash_dict = {}
 
 
 def scraper(url, resp):
@@ -33,6 +40,7 @@ def extract_next_links(url, resp):
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
     urls = []
     global visited_urls
+    global simhash_dict
     if is_valid(resp.url):
         if resp.status != 200:
             print(f"error: {resp.error}")
@@ -89,6 +97,10 @@ def extract_next_links(url, resp):
                         parsed_absolute_url = urlparse(absolute_url)
                         cleaned_absolute_url = parsed_absolute_url._replace(query='').geturl()
                         if is_valid(cleaned_absolute_url):
+                        # checks for near duplicate
+                            if is_near_duplicate(absolute_url, simhash_dict):
+                                print(f"{absolute_url} is a near duplicate with path {parsed_href}")
+                                continue
                             # URL appended after all checks
                             urls.append(cleaned_absolute_url)
     return urls
@@ -136,6 +148,8 @@ def is_valid(url):
             if (re.search("[sS]li?de?s?[_-]?\d", url) != None or re.search("sheets?-?\d", url)):
                 return False
 
+
+
             return not re.match(
                 r".*\.(css|js|bmp|gif|jpe?g|ico"
                 + r"|png|tiff?|mid|mp2|mp3|mp4"
@@ -152,3 +166,25 @@ def is_valid(url):
         print("TypeError for ", parsed)
         raise
 
+def is_near_duplicate(url, simhash_dict):
+    #extract path with given url
+    new_path = urlparse(url).path
+    #extract query with given url
+    new_query = urlparse(url).query
+    #create a combined path
+    combined_path = f"{new_path}?{new_query}"
+    #create new simhash for path
+    new_simhash = Simhash(combined_path)
+    #adds new path to dictionary
+    simhash_dict[combined_path] = new_simhash
+    # checks current url simhash with existing simhash
+    for existing_path, existing_simhash in simhash_dict.items():
+        if combined_path == existing_path:
+            continue
+        #calculate Hamming distance between simhashes
+        distance = new_simhash.distance(existing_simhash)
+        #returns True if Hamming distance is 1 or less
+        if distance <= 1:
+            print(f"near duplicate detected, url: {url}")
+            return True
+    return False
