@@ -90,9 +90,15 @@ def extract_next_links(url, resp):
                     if len(content) == 0 or len(content) > 5000000:
                         return urls
 
-                links = soup.find_all('a')
+                links = soup.find_all(['a', 'link'])
                 for link in links:
-                    href = link.get('href')
+                    if link.name == 'a':
+                        href = link.get('href')
+                    elif link.name == 'link':
+                        href = link.get('href')
+                        rel = link.get('rel')
+                        if rel and 'stylesheet' not in rel:
+                            continue
                     if href:
                         # remove fragment from URL
                         parsed_href = urlparse(href)
@@ -200,20 +206,20 @@ def generate_report():
 #     else:
 #         logger.info("No pages crawled yet.")
 
-    # 50 most common words
-    filtered_word_frequencies = {word: freq for word, freq in word_frequencies.items() if word not in stop_words}
-    filtered_word_frequencies_counter = Counter(filtered_word_frequencies)
-    common_words = filtered_word_frequencies_counter.most_common(50)
-    logger.info("50 most common words:")
-    for word, frequency in common_words:
-        logger.info("%s: %s", word, frequency)
+    # # 50 most common words
+    # filtered_word_frequencies = {word: freq for word, freq in word_frequencies.items() if word not in stop_words}
+    # filtered_word_frequencies_counter = Counter(filtered_word_frequencies)
+    # common_words = filtered_word_frequencies_counter.most_common(50)
+    # logger.info("50 most common words:")
+    # for word, frequency in common_words:
+    #     logger.info("%s: %s", word, frequency)
 
-#     # Subdomains count
-#     logger.info("Subdomains count:")
-#     for subdomain, count in sorted(subdomains.items()):
-#         logger.info("%s: %s", subdomain, count)
+    # Subdomains count
+    logger.info("Subdomains count:")
+    for subdomain, count in sorted(subdomains.items()):
+        logger.info("%s: %s", subdomain, count)
 
-#         # Count unique pages in each subdomain
-#         subdomain_pages = [page for page in unique_pages if
-#                            page.startswith("http://" + subdomain) or page.startswith("https://" + subdomain)]
-#         logger.info("   %s, %s", subdomain, len(subdomain_pages))
+        # Count unique pages in each subdomain
+        subdomain_pages = [page for page in unique_pages if
+                           page.startswith("http://" + subdomain) or page.startswith("https://" + subdomain)]
+        logger.info("   %s, %s", subdomain, len(subdomain_pages))
