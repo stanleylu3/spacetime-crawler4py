@@ -10,6 +10,10 @@ class Crawler(object):
         self.workers = list()
         self.worker_factory = worker_factory
 
+    # def register_callback(self, callback):
+    #     """Register a callback function."""
+    #     self.callbacks.append(callback)
+
     def start_async(self):
         self.workers = [
             self.worker_factory(worker_id, self.config, self.frontier)
@@ -24,3 +28,8 @@ class Crawler(object):
     def join(self):
         for worker in self.workers:
             worker.join()
+
+    def trigger_callbacks(self):
+        """Trigger all registered callback functions."""
+        for callback in self.callbacks:
+            callback()

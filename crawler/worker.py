@@ -29,7 +29,7 @@ class Worker(Thread):
         assert {getsource(scraper).find(req) for req in
                 {"from urllib.request import", "import urllib.request"}} == {
                    -1}, "Do not use urllib.request in scraper.py"
-        super().__init__(daemon = True)
+        super().__init__(daemon=True)
 
     def run(self):
         while True:
@@ -37,6 +37,7 @@ class Worker(Thread):
             if not tbd_url:
                 self.logger.info(f"Number of domains crawled: {len(self.permissions)}")
                 self.logger.info("Frontier is empty. Stopping Crawler.")
+                self.generate_report()  # Call generate_report() here
                 break
             domain = self.get_domain(tbd_url)
             politeness_delay = self.get_politeness_delay(domain, tbd_url)
@@ -111,3 +112,6 @@ class Worker(Thread):
                 time.sleep(self.retry_delay)
                 attempts += 1
         return None
+
+    def generate_report(self):
+        scraper.generate_report()  # Call generate_report() from scraper module
