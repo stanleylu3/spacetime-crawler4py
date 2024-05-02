@@ -28,7 +28,7 @@ simhash_dict = {}
 
 logger = get_logger("CRAWLER")
 
-min_word_length = 2
+min_word_len= 2
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
@@ -50,7 +50,7 @@ def extract_next_links(url, resp):
                 # Tokenize the text
                 words = nltk.word_tokenize(soup.get_text())
                 # Filter out stopwords and non-alphabetic words
-                words = [word.lower() for word in words if len(word) >= min_word_length and word.isalpha() and word.lower() not in stop_words]
+                words = [word.lower() for word in words if len(word) >= min_word_len and word.isalpha() and word.lower() not in stop_words]
                 # Update word frequencies
                 word_frequencies.update(words)
 
