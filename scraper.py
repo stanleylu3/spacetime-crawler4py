@@ -28,6 +28,8 @@ simhash_dict = {}
 
 logger = get_logger("CRAWLER")
 
+min_word_length = 2
+
 def scraper(url, resp):
     links = extract_next_links(url, resp)
     return list(links)
@@ -48,7 +50,7 @@ def extract_next_links(url, resp):
                 # Tokenize the text
                 words = nltk.word_tokenize(soup.get_text())
                 # Filter out stopwords and non-alphabetic words
-                words = [word.lower() for word in words if word.isalpha() and word.lower() not in stop_words]
+                words = [word.lower() for word in words if len(word) >= min_word_length and word.isalpha() and word.lower() not in stop_words]
                 # Update word frequencies
                 word_frequencies.update(words)
 
@@ -90,9 +92,15 @@ def extract_next_links(url, resp):
                     if len(content) == 0 or len(content) > 5000000:
                         return urls
 
-                links = soup.find_all('a')
+                links = soup.find_all(['a', 'link'])
                 for link in links:
-                    href = link.get('href')
+                    if link.name == 'a':
+                        href = link.get('href')
+                    elif link.name == 'link':
+                        href = link.get('href')
+                        rel = link.get('rel')
+                        if rel and 'stylesheet' not in rel:
+                            continue
                     if href:
                         # remove fragment from URL
                         parsed_href = urlparse(href)
@@ -190,15 +198,15 @@ def is_near_duplicate(url, simhash_dict):
     return False
 def generate_report():
     # Number of unique pages
-#     logger.info("Number of unique pages found: %s", len(unique_pages))
+    logger.info("Number of unique pages found: %s", len(unique_pages))
 
-#     # Longest page
-#     if page_lengths:
-#         longest_page_url = max(page_lengths, key=page_lengths.get)
-#         longest_page_length = page_lengths[longest_page_url]
-#         logger.info("Longest page URL: %s, Length: %s", longest_page_url, longest_page_length)
-#     else:
-#         logger.info("No pages crawled yet.")
+    # Longest page
+    if page_lengths:
+        longest_page_url = max(page_lengths, key=page_lengths.get)
+        longest_page_length = page_lengths[longest_page_url]
+        logger.info("Longest page URL: %s, Length: %s", longest_page_url, longest_page_length)
+    else:
+        logger.info("No pages crawled yet.")
 
     # 50 most common words
     filtered_word_frequencies = {word: freq for word, freq in word_frequencies.items() if word not in stop_words}
@@ -208,12 +216,12 @@ def generate_report():
     for word, frequency in common_words:
         logger.info("%s: %s", word, frequency)
 
-#     # Subdomains count
-#     logger.info("Subdomains count:")
-#     for subdomain, count in sorted(subdomains.items()):
-#         logger.info("%s: %s", subdomain, count)
+    # Subdomains count
+    logger.info("Subdomains count:")
+    for subdomain, count in sorted(subdomains.items()):
+        logger.info("%s: %s", subdomain, count)
 
-#         # Count unique pages in each subdomain
-#         subdomain_pages = [page for page in unique_pages if
-#                            page.startswith("http://" + subdomain) or page.startswith("https://" + subdomain)]
-#         logger.info("   %s, %s", subdomain, len(subdomain_pages))
+        # Count unique pages in each subdomain
+        subdomain_pages = [page for page in unique_pages if
+                           page.startswith("http://" + subdomain) or page.startswith("https://" + subdomain)]
+        logger.info("   %s, %s", subdomain, len(subdomain_pages))
