@@ -208,13 +208,13 @@ def generate_report():
     else:
         logger.info("No pages crawled yet.")
 
-    # 50 most common words
-    filtered_word_frequencies = {word: freq for word, freq in word_frequencies.items() if word not in stop_words}
-    filtered_word_frequencies_counter = Counter(filtered_word_frequencies)
-    common_words = filtered_word_frequencies_counter.most_common(50)
-    logger.info("50 most common words:")
-    for word, frequency in common_words:
-        logger.info("%s: %s", word, frequency)
+    # # 50 most common words
+    # filtered_word_frequencies = {word: freq for word, freq in word_frequencies.items() if word not in stop_words}
+    # filtered_word_frequencies_counter = Counter(filtered_word_frequencies)
+    # common_words = filtered_word_frequencies_counter.most_common(50)
+    # logger.info("50 most common words:")
+    # for word, frequency in common_words:
+    #     logger.info("%s: %s", word, frequency)
 
     # Subdomains count
     logger.info("Subdomains count:")
