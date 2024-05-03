@@ -51,6 +51,8 @@ def extract_next_links(url, resp):
                 words = nltk.word_tokenize(soup.get_text())
                 # Filter out stopwords and non-alphabetic words
                 words = [word.lower() for word in words if len(word) >= min_word_len and word.isalpha() and word.lower() not in stop_words]
+                # Exclude domain "ics.uci.edu" from words
+                words = [word for word in words if word != "ics.uci.edu"]
                 # Update word frequencies
                 word_frequencies.update(words)
 
